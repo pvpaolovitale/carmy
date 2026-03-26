@@ -1,0 +1,517 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-03-26T18:33:58.957Z",
+  "recipes": [
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "slug": "lemon-garlic-salmon",
+      "name": "Lemon Garlic Salmon",
+      "nameEs": "Salmón al Limón y Ajo",
+      "description": "Juicy air fryer salmon fillets with crispy skin, bright lemon, and caramelized garlic. Fast, clean, high-protein.",
+      "tags": [
+        "pescatarian",
+        "lactose_free"
+      ],
+      "cookingMethods": [
+        "air_fryer"
+      ],
+      "prepTimeMin": 10,
+      "cookTimeMin": 12,
+      "macrosPerServing": {
+        "kcal": 420,
+        "proteinG": 48,
+        "carbsG": 4,
+        "fatG": 22
+      },
+      "ingredients": [
+        {
+          "name": "Salmon fillet",
+          "nameEs": "Filete de salmón",
+          "quantity": 200,
+          "unit": "g",
+          "supermarketSection": "fish_seafood"
+        },
+        {
+          "name": "Garlic cloves",
+          "nameEs": "Dientes de ajo",
+          "quantity": 3,
+          "unit": "cloves",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Lemon",
+          "nameEs": "Limón",
+          "quantity": 1,
+          "unit": "piece",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Olive oil",
+          "nameEs": "Aceite de oliva",
+          "quantity": 15,
+          "unit": "ml",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Paprika",
+          "nameEs": "Pimentón",
+          "quantity": 5,
+          "unit": "g",
+          "supermarketSection": "spices_condiments"
+        },
+        {
+          "name": "Salt & pepper",
+          "nameEs": "Sal y pimienta",
+          "quantity": 1,
+          "unit": "pinch",
+          "supermarketSection": "spices_condiments"
+        }
+      ],
+      "steps": [
+        {
+          "order": 1,
+          "instruction": "Pat salmon dry with paper towel. Season with salt, pepper, and paprika.",
+          "tip": "Dry skin = crispy skin. Don't skip this step."
+        },
+        {
+          "order": 2,
+          "instruction": "Mix minced garlic with olive oil and lemon zest. Brush over salmon."
+        },
+        {
+          "order": 3,
+          "instruction": "Preheat air fryer to 200°C for 3 minutes.",
+          "airFryerPhase": true
+        },
+        {
+          "order": 4,
+          "instruction": "Place salmon skin-side down in air fryer basket. Cook 10-12 min.",
+          "durationMin": 12,
+          "airFryerPhase": true,
+          "tip": "No need to flip — the air circulates all around."
+        },
+        {
+          "order": 5,
+          "instruction": "Squeeze fresh lemon juice over the top before serving."
+        }
+      ],
+      "airFryerSettings": {
+        "tempC": 200,
+        "durationMin": 12,
+        "preheat": true,
+        "notes": "No flipping needed. Check at 10 min for thinner fillets."
+      },
+      "storageNotes": {
+        "fridgeDays": 3,
+        "reheatingMethod": "Air fryer at 180°C for 4 min",
+        "portionNotes": "Pack second portion immediately after cooking to preserve moisture."
+      },
+      "proteinBuffer": {
+        "name": "Greek yogurt (lactose-free) with walnuts",
+        "kcal": 180,
+        "proteinG": 18,
+        "description": "150g lactose-free Greek yogurt + 20g walnuts"
+      },
+      "createdAt": "2026-03-26T00:00:00.000Z",
+      "source": "user",
+      "favorite": true
+    },
+    {
+      "id": "a1b2c3d4-0002-0002-0002-000000000002",
+      "slug": "teriyaki-tuna-rice-bowl",
+      "name": "Teriyaki Tuna Rice Bowl",
+      "nameEs": "Bowl de Atún Teriyaki con Arroz",
+      "description": "Seared tuna steak glazed in homemade teriyaki, served over steamed rice with sesame cucumber salad.",
+      "tags": [
+        "pescatarian",
+        "lactose_free"
+      ],
+      "cookingMethods": [
+        "stovetop"
+      ],
+      "prepTimeMin": 15,
+      "cookTimeMin": 20,
+      "macrosPerServing": {
+        "kcal": 520,
+        "proteinG": 52,
+        "carbsG": 48,
+        "fatG": 10
+      },
+      "ingredients": [
+        {
+          "name": "Tuna steak",
+          "nameEs": "Filete de atún",
+          "quantity": 200,
+          "unit": "g",
+          "supermarketSection": "fish_seafood"
+        },
+        {
+          "name": "Jasmine rice",
+          "nameEs": "Arroz jazmín",
+          "quantity": 80,
+          "unit": "g",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Soy sauce",
+          "nameEs": "Salsa de soja",
+          "quantity": 40,
+          "unit": "ml",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Honey",
+          "nameEs": "Miel",
+          "quantity": 20,
+          "unit": "g",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Sesame oil",
+          "nameEs": "Aceite de sésamo",
+          "quantity": 10,
+          "unit": "ml",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Cucumber",
+          "nameEs": "Pepino",
+          "quantity": 1,
+          "unit": "piece",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Sesame seeds",
+          "nameEs": "Semillas de sésamo",
+          "quantity": 10,
+          "unit": "g",
+          "supermarketSection": "spices_condiments"
+        },
+        {
+          "name": "Spring onion",
+          "nameEs": "Cebolleta",
+          "quantity": 2,
+          "unit": "stalks",
+          "supermarketSection": "produce"
+        }
+      ],
+      "steps": [
+        {
+          "order": 1,
+          "instruction": "Cook rice according to package instructions. Keep warm."
+        },
+        {
+          "order": 2,
+          "instruction": "Mix soy sauce, honey, and a splash of water in a small bowl to make teriyaki glaze."
+        },
+        {
+          "order": 3,
+          "instruction": "Pat tuna steak dry. Season with salt and pepper."
+        },
+        {
+          "order": 4,
+          "instruction": "Heat sesame oil in a skillet over high heat. Sear tuna 2 min per side for medium.",
+          "durationMin": 4,
+          "tip": "High heat = sear, not steam. The pan must be smoking."
+        },
+        {
+          "order": 5,
+          "instruction": "Pour teriyaki glaze into the pan and let reduce 1 min, coating the tuna."
+        },
+        {
+          "order": 6,
+          "instruction": "Slice cucumber thin. Toss with a few drops of sesame oil and sesame seeds."
+        },
+        {
+          "order": 7,
+          "instruction": "Serve tuna sliced over rice. Add cucumber salad and garnish with spring onion."
+        }
+      ],
+      "storageNotes": {
+        "fridgeDays": 2,
+        "reheatingMethod": "Microwave rice + cold tuna sliced over top (tuna is better cold)",
+        "portionNotes": "Store tuna and rice separately to avoid mushiness."
+      },
+      "proteinBuffer": {
+        "name": "Edamame with sea salt",
+        "kcal": 150,
+        "proteinG": 12,
+        "description": "150g edamame pods, lightly salted"
+      },
+      "createdAt": "2026-03-26T00:00:00.000Z",
+      "source": "user",
+      "favorite": false
+    },
+    {
+      "id": "a1b2c3d4-0003-0003-0003-000000000003",
+      "slug": "mediterranean-sea-bass",
+      "name": "Mediterranean Sea Bass",
+      "nameEs": "Lubina Mediterránea",
+      "description": "Whole sea bass roasted with olives, cherry tomatoes, capers, and herbs. Simple, elegant, packed with flavor.",
+      "tags": [
+        "pescatarian",
+        "lactose_free"
+      ],
+      "cookingMethods": [
+        "oven"
+      ],
+      "prepTimeMin": 15,
+      "cookTimeMin": 25,
+      "macrosPerServing": {
+        "kcal": 380,
+        "proteinG": 44,
+        "carbsG": 8,
+        "fatG": 18
+      },
+      "ingredients": [
+        {
+          "name": "Sea bass fillet",
+          "nameEs": "Filete de lubina",
+          "quantity": 200,
+          "unit": "g",
+          "supermarketSection": "fish_seafood"
+        },
+        {
+          "name": "Cherry tomatoes",
+          "nameEs": "Tomates cherry",
+          "quantity": 150,
+          "unit": "g",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Kalamata olives",
+          "nameEs": "Aceitunas kalamata",
+          "quantity": 50,
+          "unit": "g",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Capers",
+          "nameEs": "Alcaparras",
+          "quantity": 20,
+          "unit": "g",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Garlic cloves",
+          "nameEs": "Dientes de ajo",
+          "quantity": 4,
+          "unit": "cloves",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Fresh thyme",
+          "nameEs": "Tomillo fresco",
+          "quantity": 5,
+          "unit": "sprigs",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Olive oil",
+          "nameEs": "Aceite de oliva",
+          "quantity": 20,
+          "unit": "ml",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Lemon",
+          "nameEs": "Limón",
+          "quantity": 1,
+          "unit": "piece",
+          "supermarketSection": "produce"
+        }
+      ],
+      "steps": [
+        {
+          "order": 1,
+          "instruction": "Preheat oven to 200°C."
+        },
+        {
+          "order": 2,
+          "instruction": "Toss cherry tomatoes, olives, capers, and garlic with olive oil in a baking dish."
+        },
+        {
+          "order": 3,
+          "instruction": "Season sea bass with salt, pepper, and thyme. Nestle into the vegetables."
+        },
+        {
+          "order": 4,
+          "instruction": "Lay lemon slices over the fish. Drizzle with a little more olive oil."
+        },
+        {
+          "order": 5,
+          "instruction": "Roast 20-25 minutes until fish flakes easily.",
+          "durationMin": 25
+        },
+        {
+          "order": 6,
+          "instruction": "Let rest 2 minutes before serving."
+        }
+      ],
+      "storageNotes": {
+        "fridgeDays": 3,
+        "reheatingMethod": "Oven at 160°C for 8 min covered with foil",
+        "portionNotes": "The tomato sauce keeps the second portion very moist."
+      },
+      "proteinBuffer": {
+        "name": "Hard-boiled eggs",
+        "kcal": 140,
+        "proteinG": 12,
+        "description": "2 hard-boiled eggs with a pinch of salt"
+      },
+      "createdAt": "2026-03-26T00:00:00.000Z",
+      "source": "user",
+      "favorite": true
+    },
+    {
+      "name": "Lemon Tuna Pasta alla Mediterranea",
+      "nameEs": "Pasta con Atún al Limón Mediterránea",
+      "description": "A bright, satisfying Italian-style pasta with albacore tuna, capers, cherry tomatoes, and lemon zest — clean, bold flavors with serious protein punch.",
+      "tags": [
+        "pescatarian",
+        "lactose_free"
+      ],
+      "cookingMethods": [
+        "stovetop"
+      ],
+      "prepTimeMin": 10,
+      "cookTimeMin": 20,
+      "macrosPerServing": {
+        "kcal": 520,
+        "proteinG": 42,
+        "carbsG": 58,
+        "fatG": 10
+      },
+      "ingredients": [
+        {
+          "name": "Rigatoni pasta (or spaghetti)",
+          "nameEs": "Rigatoni (o espagueti)",
+          "quantity": 90,
+          "unit": "g dry",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Albacore tuna in water, drained",
+          "nameEs": "Atún blanco en agua, escurrido",
+          "quantity": 150,
+          "unit": "g",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Cherry tomatoes, halved",
+          "nameEs": "Tomates cherry, partidos por la mitad",
+          "quantity": 100,
+          "unit": "g",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Garlic cloves, thinly sliced",
+          "nameEs": "Dientes de ajo, en láminas",
+          "quantity": 2,
+          "unit": "cloves",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Capers, rinsed",
+          "nameEs": "Alcaparras, enjuagadas",
+          "quantity": 15,
+          "unit": "g",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Extra virgin olive oil",
+          "nameEs": "Aceite de oliva virgen extra",
+          "quantity": 1,
+          "unit": "tbsp",
+          "supermarketSection": "pantry"
+        },
+        {
+          "name": "Lemon, zest and juice",
+          "nameEs": "Limón, ralladura y zumo",
+          "quantity": 0.5,
+          "unit": "unit",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Fresh flat-leaf parsley, chopped",
+          "nameEs": "Perejil fresco, picado",
+          "quantity": 10,
+          "unit": "g",
+          "supermarketSection": "produce"
+        },
+        {
+          "name": "Dried chili flakes",
+          "nameEs": "Copos de chile seco",
+          "quantity": 0.5,
+          "unit": "tsp",
+          "supermarketSection": "spices_condiments",
+          "optional": true
+        },
+        {
+          "name": "Salt",
+          "nameEs": "Sal",
+          "quantity": 1,
+          "unit": "pinch",
+          "supermarketSection": "spices_condiments"
+        },
+        {
+          "name": "Black pepper",
+          "nameEs": "Pimienta negra",
+          "quantity": 1,
+          "unit": "pinch",
+          "supermarketSection": "spices_condiments"
+        }
+      ],
+      "steps": [
+        {
+          "order": 1,
+          "instruction": "Bring a large pot of generously salted water to a boil. Cook the pasta according to package instructions until al dente. Reserve 60ml (¼ cup) of pasta cooking water before draining.",
+          "durationMin": 12,
+          "tip": "Salting the water well is your only chance to season the pasta itself — it should taste like the sea."
+        },
+        {
+          "order": 2,
+          "instruction": "While pasta cooks, heat olive oil in a large skillet over medium heat. Add the sliced garlic and chili flakes, cooking gently until fragrant and just golden. Do not let the garlic brown.",
+          "durationMin": 2,
+          "tip": "Low and slow on the garlic — bitter garlic ruins the whole dish."
+        },
+        {
+          "order": 3,
+          "instruction": "Add the cherry tomatoes to the skillet. Cook, pressing them lightly with a spoon, until they begin to burst and release their juices.",
+          "durationMin": 4
+        },
+        {
+          "order": 4,
+          "instruction": "Add the drained tuna and capers to the skillet. Break the tuna apart gently with a fork and stir to combine with the tomato mixture. Cook for 1–2 minutes to warm through.",
+          "durationMin": 2,
+          "tip": "Keep some tuna chunks intact for texture — avoid over-stirring."
+        },
+        {
+          "order": 5,
+          "instruction": "Add the drained pasta to the skillet. Toss everything together, adding a splash of the reserved pasta water to loosen the sauce and help it cling to the pasta. Add lemon zest and juice, and toss again.",
+          "durationMin": 1,
+          "tip": "The starchy pasta water is the secret to a silky, cohesive sauce without needing cream or butter."
+        },
+        {
+          "order": 6,
+          "instruction": "Remove from heat. Stir in the chopped parsley, adjust seasoning with salt and pepper, and serve immediately.",
+          "durationMin": 1
+        }
+      ],
+      "storageNotes": {
+        "fridgeDays": 3,
+        "reheatingMethod": "Reheat in a skillet over medium-low heat with a small splash of water to loosen the pasta and prevent sticking. Avoid microwave if possible as it dries the pasta out.",
+        "portionNotes": "Double all quantities when cooking. Store the second portion in an airtight container once fully cooled. This also works great eaten cold as a pasta salad for lunch."
+      },
+      "proteinBuffer": {
+        "name": "Hard-Boiled Eggs + Rice Cakes",
+        "kcal": 190,
+        "proteinG": 14,
+        "description": "Two hard-boiled eggs with two plain rice cakes — a light, no-fuss morning snack that keeps you satiated and complements the Mediterranean flavors of the day without adding dairy or meat."
+      },
+      "id": "a06e73a7-2fbe-4fd0-9951-a83ebd0b452b",
+      "slug": "lemon-tuna-pasta-alla-mediterranea",
+      "createdAt": "2026-03-26T18:33:58.951Z",
+      "source": "ai_formatted"
+    }
+  ]
+}
