@@ -140,6 +140,17 @@ export const remove = mutation({
   },
 });
 
+export const removeAll = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const docs = await ctx.db.query('recipes').collect();
+    for (const doc of docs) {
+      await ctx.db.delete(doc._id);
+    }
+    return { deleted: docs.length };
+  },
+});
+
 export const seedMany = mutation({
   args: {
     recipes: v.array(v.any()),

@@ -20,7 +20,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'NEXT_PUBLIC_CONVEX_URL not set' }, { status: 500 });
   }
 
+  const force = req.headers.get('x-force') === 'true';
   const client = new ConvexHttpClient(url);
+
+  if (force) {
+    await client.mutation(api.recipes.removeAll, {});
+  }
+
   const result = await client.mutation(api.recipes.seedMany, {
     recipes: recipesData.recipes,
   });
