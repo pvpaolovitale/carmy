@@ -151,7 +151,8 @@ export const seedMany = mutation({
 
     for (const r of recipes) {
       const { id, ...rest } = r as { id: string; [k: string]: unknown };
-      await ctx.db.insert('recipes', { recipeId: id, ...rest });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await ctx.db.insert('recipes', { recipeId: id, ...rest } as any);
     }
     return { seeded: recipes.length, skipped: false };
   },
