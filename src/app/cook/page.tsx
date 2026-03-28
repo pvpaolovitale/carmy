@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getAllRecipes } from '@/lib/recipes';
 import RecipeCard from '@/components/cook/RecipeCard';
 
