@@ -33,6 +33,7 @@ export default function WeeklyPlanPage() {
   // ── Convex queries & mutations ───────────────────────────────────────────────
   const activePlan = useQuery(api.weeklyPlans.getActivePlan, { weekStartDate });
   const allRawRecipes = useQuery(api.recipes.getAll);
+  const standaloneBuffers = useQuery(api.proteinBuffers.getAll);
 
   const createPlan = useMutation(api.weeklyPlans.createPlan);
   const updateDinnerSlots = useMutation(api.weeklyPlans.updateDinnerSlots);
@@ -83,14 +84,22 @@ export default function WeeklyPlanPage() {
   const derivedBufferSlots: BufferSlot[] =
     (activePlan as { bufferSlots?: BufferSlot[] } | null)?.bufferSlots ?? [];
 
-  // ── Deduplicated protein buffers from all recipes ────────────────────────────
+  // ── Deduplicated protein buffers (recipe-embedded + standalone) ──────────────
   const availableBuffers: SelectedProteinBuffer[] = (() => {
     const seen = new Set<string>();
     const result: SelectedProteinBuffer[] = [];
+    // Recipe-embedded buffers
     for (const r of allRecipes) {
       if (r.proteinBuffer && !seen.has(r.proteinBuffer.name)) {
         seen.add(r.proteinBuffer.name);
         result.push({ ...r.proteinBuffer, servings: 1 });
+      }
+    }
+    // Standalone buffers from the proteinBuffers table
+    for (const b of standaloneBuffers ?? []) {
+      if (!seen.has(b.name)) {
+        seen.add(b.name);
+        result.push({ name: b.name, kcal: b.kcal, proteinG: b.proteinG, description: b.description, servings: 1 });
       }
     }
     return result;
@@ -148,6 +157,37 @@ export default function WeeklyPlanPage() {
     }
   };
 
+  // ── Pool management ──────────────────────────────────────────────────────────
+
+  const handlePoolRecipeRemove = async (recipeId: string) => {
+    if (!activePlan) return;
+    const updatedMealSlots = derivedMealSlots.filter((s) => s.recipeId !== recipeId);
+    const updatedDinnerSlots = (activePlan.dinnerSlots ?? []).filter((s) => s.recipeId !== recipeId);
+    await updateMealSlotsConvex({
+      id: activePlan._id as Id<'weeklyPlans'>,
+      mealSlots: updatedMealSlots,
+      dinnerSlots: updatedDinnerSlots,
+    });
+  };
+
+  const handlePoolRecipeAdd = async (recipeId: string) => {
+    if (!activePlan) return;
+    const usedDays = new Set((activePlan.dinnerSlots ?? []).map((s) => s.day));
+    // Use a weekend slot (not shown in timetable) as placeholder day for pool-only recipes
+    const poolDay =
+      (['saturday', 'sunday'] as DayOfWeek[]).find((d) => !usedDays.has(d)) ??
+      DAYS.find((d) => !usedDays.has(d)) ??
+      ('saturday' as DayOfWeek);
+    const updatedDinnerSlots = [
+      ...(activePlan.dinnerSlots ?? []),
+      { day: poolDay, recipeId, confirmed: false },
+    ];
+    await updateDinnerSlots({
+      id: activePlan._id as Id<'weeklyPlans'>,
+      dinnerSlots: updatedDinnerSlots,
+    });
+  };
+
   // ── Timetable handlers ───────────────────────────────────────────────────────
   const handleMealSlotsUpdate = async (
     mealSlots: MealSlot[],
@@ -158,16 +198,20 @@ export default function WeeklyPlanPage() {
     // Never write Glovo placeholder IDs into dinnerSlots (they don't need shopping)
     const realDinnerSlots = dinnerSlots.filter((s) => !s.recipeId.startsWith('glovo::'));
 
-    // Days explicitly cleared in the timetable (dinner slot with no recipeId)
     const clearedDays = new Set(
       mealSlots.filter((s) => s.mealType === 'dinner' && !s.recipeId).map((s) => s.day)
     );
     const updatedDays = new Set(realDinnerSlots.map((s) => s.day));
+    const updatedRecipeIds = new Set(realDinnerSlots.map((s) => s.recipeId));
 
-    // Merge: keep existing dinner slots that were not touched, add/replace updated ones
+    // Merge: keep existing slots not touched, clean up pool-placeholder entries for recipes
+    // that now have a proper timetable day (avoid duplicates in shopping list)
     const mergedDinnerSlots = [
       ...(activePlan.dinnerSlots ?? []).filter(
-        (s) => !updatedDays.has(s.day) && !clearedDays.has(s.day)
+        (s) =>
+          !updatedDays.has(s.day) &&
+          !clearedDays.has(s.day) &&
+          !updatedRecipeIds.has(s.recipeId)
       ),
       ...realDinnerSlots,
     ];
@@ -195,13 +239,12 @@ export default function WeeklyPlanPage() {
     setIsGeneratingList(true);
     setError('');
     try {
+      // Deduplicate recipeIds to avoid counting pool-placeholder slots twice
+      const recipeIds = [...new Set(slots.map((s) => s.recipeId))];
       const res = await fetch('/api/shopping-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipeIds: slots.map((s) => s.recipeId),
-          proteinBuffers: selectedBuffers,
-        }),
+        body: JSON.stringify({ recipeIds, proteinBuffers: selectedBuffers }),
       });
 
       if (!res.ok) throw new Error('Failed to generate shopping list');
@@ -282,11 +325,19 @@ export default function WeeklyPlanPage() {
       bufferSlots={derivedBufferSlots}
       availableRecipes={planRecipes}
       availableBuffers={availableBuffers}
+      allRecipes={allRecipes}
       onMealSlotsUpdate={handleMealSlotsUpdate}
       onBufferSlotsUpdate={handleBufferSlotsUpdate}
       onConfirm={handleTimetableConfirm}
+      onPoolRecipeRemove={handlePoolRecipeRemove}
+      onPoolRecipeAdd={handlePoolRecipeAdd}
     />
   ) : null;
+
+  // ── Shared recipe count controls ──────────────────────────────────────────────
+  const showControls = !activePlan || planStatus === 'planning';
+  const controlsLabel = activePlan ? 'Regenerate:' : 'Dinners this week:';
+  const controlsButtonLabel = activePlan ? 'Regenerate All' : 'Generate Plan';
 
   return (
     <div className="flex flex-col gap-6">
@@ -297,16 +348,30 @@ export default function WeeklyPlanPage() {
         </p>
       </div>
 
-      {/* ── IDLE: no active plan ── */}
+      {/* ── IDLE: welcome message ── */}
       {!activePlan && (
         <div className="bg-surface-2 border border-border rounded-xl p-8 text-center">
           <p className="text-4xl mb-4">🧑‍🍳</p>
           <p className="text-foreground font-semibold mb-2">Ready to plan your week?</p>
-          <p className="text-muted text-sm mb-6">
+          <p className="text-muted text-sm">
             Carmy will pick dinners from your recipe bank.
           </p>
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <span className="text-sm text-muted">Dinners this week:</span>
+        </div>
+      )}
+
+      {/* ── PLANNING phase: Carmy says ── */}
+      {activePlan && planStatus === 'planning' && activePlan.rationale && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+          <p className="text-xs text-amber-400 font-semibold mb-1">👨‍🍳 Carmy says</p>
+          <p className="text-sm text-amber-300">{activePlan.rationale}</p>
+        </div>
+      )}
+
+      {/* ── Recipe count controls (IDLE + PLANNING) ── */}
+      {showControls && (
+        <div className="bg-surface-2 border border-border rounded-xl p-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-sm text-muted">{controlsLabel}</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setRecipeCount((n) => Math.max(2, n - 1))}
@@ -322,19 +387,18 @@ export default function WeeklyPlanPage() {
                 +
               </button>
             </div>
+            <Button
+              onClick={() => {
+                setTimetableConfirmed(false);
+                generatePlan();
+              }}
+              loading={isGenerating}
+              size="sm"
+            >
+              {controlsButtonLabel}
+            </Button>
           </div>
-          <Button onClick={() => generatePlan()} size="lg" loading={isGenerating}>
-            Generate Plan
-          </Button>
-          {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
-        </div>
-      )}
-
-      {/* ── PLANNING phase extras ── */}
-      {activePlan && planStatus === 'planning' && activePlan.rationale && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
-          <p className="text-xs text-amber-400 font-semibold mb-1">👨‍🍳 Carmy says</p>
-          <p className="text-sm text-amber-300">{activePlan.rationale}</p>
+          {error && !timetableConfirmed && <p className="text-red-400 text-sm mt-2">{error}</p>}
         </div>
       )}
 
@@ -342,35 +406,25 @@ export default function WeeklyPlanPage() {
       {timetable}
 
       {/* ── PLANNING: confirm + shopping list generation ── */}
-      {activePlan && planStatus === 'planning' && (
-        <>
-          {timetableConfirmed && (
-            <div className="bg-surface-2 border border-border rounded-xl p-4 flex flex-col gap-3">
-              {selectedBuffers.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted mb-1">🌅 Protein buffers selected</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedBuffers.map((b) => (
-                      <span key={b.name} className="text-xs bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-1 text-amber-300">
-                        {b.name} × {b.servings}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <Button onClick={generateShoppingList} loading={isGeneratingList}>
-                Generate Shopping List →
-              </Button>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+      {activePlan && planStatus === 'planning' && timetableConfirmed && (
+        <div className="bg-surface-2 border border-border rounded-xl p-4 flex flex-col gap-3">
+          {selectedBuffers.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted mb-1">🌅 Protein buffers selected</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedBuffers.map((b) => (
+                  <span key={b.name} className="text-xs bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-1 text-amber-300">
+                    {b.name} × {b.servings}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
-          <div className="flex gap-3 flex-wrap">
-            <Button variant="secondary" onClick={() => { setTimetableConfirmed(false); generatePlan(); }} loading={isGenerating}>
-              Regenerate All
-            </Button>
-          </div>
-          {error && !timetableConfirmed && <p className="text-red-400 text-sm">{error}</p>}
-        </>
+          <Button onClick={generateShoppingList} loading={isGeneratingList}>
+            Generate Shopping List →
+          </Button>
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+        </div>
       )}
 
       {/* ── SHOPPING: shopping list below timetable ── */}

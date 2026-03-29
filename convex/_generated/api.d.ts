@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as proteinBuffers from "../proteinBuffers.js";
 import type * as recipes from "../recipes.js";
+import type * as settings from "../settings.js";
 import type * as weeklyPlans from "../weeklyPlans.js";
 
 import type {
@@ -18,7 +20,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  proteinBuffers: typeof proteinBuffers;
   recipes: typeof recipes;
+  settings: typeof settings;
   weeklyPlans: typeof weeklyPlans;
 }>;
 

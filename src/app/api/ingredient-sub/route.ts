@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { callClaudeJSON } from '@/lib/claude';
 import { buildSubstitutionPrompt } from '@/lib/prompts';
+import { getPromptSettings } from '@/lib/settings';
 import { IngredientSubRequest, IngredientSubResponse } from '@/types';
 
 export async function POST(req: Request) {
@@ -11,11 +12,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'originalItem is required' }, { status: 400 });
     }
 
+    const settings = await getPromptSettings();
     const systemPrompt = buildSubstitutionPrompt(
       body.originalItem,
       body.userContext,
       body.previousSuggestions,
       body.feedback,
+      settings.substitutionPrompt,
+      settings.userProfile,
     );
 
     const result = await callClaudeJSON<IngredientSubResponse>(

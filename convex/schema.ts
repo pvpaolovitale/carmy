@@ -72,6 +72,19 @@ export default defineSchema({
     completedAt: v.string(),
   }).index('by_weeklyPlanId', ['weeklyPlanId']),
 
+  proteinBuffers: defineTable({
+    name: v.string(),
+    kcal: v.number(),
+    proteinG: v.number(),
+    description: v.string(),
+    createdAt: v.string(),
+  }).index('by_name', ['name']),
+
+  appSettings: defineTable({
+    key: v.string(),
+    value: v.string(),
+  }).index('by_key', ['key']),
+
   recipes: defineTable({
     // Identity
     recipeId: v.string(),   // our own UUID (kept as "id" in app)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAllRecipes } from '@/lib/recipes';
 import { callClaudeJSON } from '@/lib/claude';
 import { buildShoppingListPrompt } from '@/lib/prompts';
+import { getPromptSettings } from '@/lib/settings';
 import { RawShoppingSection, Recipe, SelectedProteinBuffer } from '@/types';
 
 export async function POST(req: Request) {
@@ -12,8 +13,8 @@ export async function POST(req: Request) {
       proteinBuffers?: SelectedProteinBuffer[];
     };
 
-    if (!recipeIds || recipeIds.length < 2 || recipeIds.length > 7) {
-      return NextResponse.json({ error: 'Between 2 and 7 recipe IDs required' }, { status: 400 });
+    if (!recipeIds || recipeIds.length < 1) {
+      return NextResponse.json({ error: 'At least 1 recipe ID required' }, { status: 400 });
     }
 
     const allRecipes = await getAllRecipes();
@@ -25,7 +26,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'One or more recipe IDs not found' }, { status: 404 });
     }
 
-    const systemPrompt = buildShoppingListPrompt(recipes, proteinBuffers);
+    const settings = await getPromptSettings();
+    const systemPrompt = buildShoppingListPrompt(recipes, proteinBuffers, settings.shoppingListPrompt);
     const result = await callClaudeJSON<{ sections: RawShoppingSection[]; wasteNotes?: string[] }>(
       systemPrompt,
       'Generate the shopping list.'

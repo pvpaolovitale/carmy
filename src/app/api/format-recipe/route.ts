@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { callClaudeJSON } from '@/lib/claude';
 import { buildFormatRecipePrompt } from '@/lib/prompts';
+import { getPromptSettings } from '@/lib/settings';
 import { FormatRecipeRequest, FormatRecipeResponse } from '@/types';
 
 export async function POST(req: Request) {
@@ -11,7 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'rawDescription is required' }, { status: 400 });
     }
 
-    const systemPrompt = buildFormatRecipePrompt();
+    const settings = await getPromptSettings();
+    const systemPrompt = buildFormatRecipePrompt(settings.formatRecipePrompt, settings.userProfile);
     const result = await callClaudeJSON<FormatRecipeResponse>(
       systemPrompt,
       `Format this recipe:\n\n${body.rawDescription}`

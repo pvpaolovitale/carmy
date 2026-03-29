@@ -8,6 +8,7 @@ const nav = [
   { href: '/weekly-plan', label: 'Weekly Plan', icon: '📅' },
   { href: '/cook', label: 'Cook', icon: '🍳' },
   { href: '/recipe-bank', label: 'Recipe Bank', icon: '📖' },
+  { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export default function Sidebar() {

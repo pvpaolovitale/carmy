@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { getAllRecipes } from '@/lib/recipes';
 import { callClaudeJSON } from '@/lib/claude';
 import { buildPlanPrompt } from '@/lib/prompts';
+import { getPromptSettings } from '@/lib/settings';
 import { GeneratePlanRequest, GeneratePlanResponse } from '@/types';
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as GeneratePlanRequest;
     const recipeCount = Math.min(7, Math.max(2, body.recipeCount ?? 4));
-    const recipes = await getAllRecipes();
+    const [recipes, settings] = await Promise.all([getAllRecipes(), getPromptSettings()]);
 
     if (recipes.length < recipeCount) {
       return NextResponse.json(
@@ -17,7 +18,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const systemPrompt = buildPlanPrompt(recipes, body.excludeRecipeIds, body.notes, recipeCount);
+    const systemPrompt = buildPlanPrompt(
+      recipes,
+      body.excludeRecipeIds,
+      body.notes,
+      recipeCount,
+      settings.planPrompt,
+      settings.userProfile
+    );
     const result = await callClaudeJSON<GeneratePlanResponse>(systemPrompt, 'Generate my weekly meal plan.');
 
     // Validate selected IDs exist and count matches

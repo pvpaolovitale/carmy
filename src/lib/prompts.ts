@@ -1,71 +1,57 @@
 import { Recipe, SelectedProteinBuffer, SubstitutionSuggestion } from '@/types';
 
-const USER_PROFILE = `
-User Profile:
+// ─── Default User Profile ─────────────────────────────────────────────────────
+
+export const DEFAULT_USER_PROFILE = `User Profile:
 - Goal: Fat loss + muscle retention (recomposition)
 - Daily Calories: 1,750 kcal
 - Daily Protein: 160g
 - Diet: Pescatarian (no meat, no poultry) · Lactose-Free
 - Cook Once, Eat Twice: every dinner is a DOUBLE portion (one for tonight, one for tomorrow's lunch)
-- Air Fryer model: Create Air Fryer Studio Crystal
-`;
+- Air Fryer model: Create Air Fryer Studio Crystal`;
 
-export function buildPlanPrompt(recipes: Recipe[], excludeIds: string[] = [], notes?: string, recipeCount = 4): string {
-  const available = recipes.filter((r) => !excludeIds.includes(r.id));
-  const recipeList = available
-    .map((r) => `- ID: "${r.id}" | Name: "${r.name}" | Method: ${r.cookingMethods.join(', ')} | Protein: ${r.macrosPerServing.proteinG}g | kcal: ${r.macrosPerServing.kcal}${r.favorite ? ' ⭐ favorite' : ''}`)
-    .join('\n');
+// ─── Template engine ──────────────────────────────────────────────────────────
 
-  const ids = Array.from({ length: recipeCount }, (_, i) => `"id${i + 1}"`).join(', ');
+export function applyTemplate(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce(
+    (t, [k, v]) => t.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), v),
+    template
+  );
+}
 
-  return `You are Carmy, an AI Chef & Nutritionist.
+// ─── Default prompt templates ─────────────────────────────────────────────────
+// These are the templates shown + editable in Settings.
+// Dynamic sections (recipe lists etc.) are injected via {{PLACEHOLDER}} at runtime.
 
-${USER_PROFILE}
+export const DEFAULT_PLAN_PROMPT_TEMPLATE = `You are Carmy, an AI Chef & Nutritionist.
 
-Your job: Select exactly ${recipeCount} dinners from the recipe bank for this week's meal plan.
+{{USER_PROFILE}}
+
+Your job: Select exactly {{RECIPE_COUNT}} dinners from the recipe bank for this week's meal plan.
 
 Rules:
-1. Select exactly ${recipeCount} recipes
+1. Select exactly {{RECIPE_COUNT}} recipes
 2. Balance cooking methods (don't pick only air fryer recipes if others are available)
 3. Balance flavor profiles / cuisines
 4. Prioritize favorites (⭐) but don't pick all favorites
 5. Ensure the weekly protein and calorie targets are met across the plan
-${notes ? `6. User notes: ${notes}` : ''}
-
+{{NOTES_RULE}}
 Available recipes:
-${recipeList}
+{{RECIPE_LIST}}
 
 Respond with JSON in this exact shape:
 {
-  "selectedRecipeIds": [${ids}],
+  "selectedRecipeIds": [{{IDS}}],
   "rationale": "Brief explanation of your choices (2-3 sentences)"
 }`;
-}
 
-export function buildShoppingListPrompt(recipes: Recipe[], proteinBuffers?: SelectedProteinBuffer[]): string {
-  const recipeNames = recipes.map((r) => r.name).join(', ');
+export const DEFAULT_SHOPPING_PROMPT_TEMPLATE = `You are Carmy, an AI Chef & Nutritionist.
 
-  const ingredientsByRecipe = recipes
-    .map((r) =>
-      `Recipe: ${r.name}\n${r.ingredients
-        .map((i) => `  - ${i.quantity * 2}${i.unit} ${i.name} (ES: ${i.nameEs}) [section: ${i.supermarketSection}]`)
-        .join('\n')}`
-    )
-    .join('\n\n');
-
-  const bufferSection = proteinBuffers && proteinBuffers.length > 0
-    ? `\nProtein Buffers (add to pantry/produce sections as appropriate):\n${proteinBuffers
-        .map((b) => `  - ${b.name} × ${b.servings} servings (${b.proteinG}g protein each) — ${b.description}`)
-        .join('\n')}`
-    : '';
-
-  return `You are Carmy, an AI Chef & Nutritionist.
-
-Recipes this week: ${recipeNames}
+Recipes this week: {{RECIPE_NAMES}}
 Cook Once Eat Twice: ALL quantities are already doubled (2 servings per recipe).
 
 Ingredients to consolidate:
-${ingredientsByRecipe}${bufferSection}
+{{INGREDIENTS_BY_RECIPE}}{{BUFFER_SECTION}}
 
 Generate a consolidated bilingual shopping list. Rules:
 1. Merge duplicate ingredients across recipes (sum quantities)
@@ -103,26 +89,13 @@ Respond with JSON:
   ],
   "wasteNotes": ["Use the leftover lemon from Recipe A in Recipe B"]
 }`;
-}
 
-export function buildSubstitutionPrompt(
-  originalItem: { nameEn: string; nameEs: string; quantity: string },
-  userContext?: string,
-  previousSuggestions?: SubstitutionSuggestion[],
-  feedback?: string,
-): string {
-  const refineSection = previousSuggestions && previousSuggestions.length > 0
-    ? `\nPrevious suggestions (provide DIFFERENT alternatives this time):\n${previousSuggestions
-        .map((s) => `  - ${s.nameEn} (${s.quantity}): ${s.rationale}`)
-        .join('\n')}${feedback ? `\nUser feedback: "${feedback}"` : ''}\n`
-    : '';
+export const DEFAULT_SUBSTITUTION_PROMPT_TEMPLATE = `You are Carmy, an AI Chef & Nutritionist.
 
-  return `You are Carmy, an AI Chef & Nutritionist.
+{{USER_PROFILE}}
 
-${USER_PROFILE}
-
-The user cannot find this ingredient: "${originalItem.nameEn}" / "${originalItem.nameEs}" (${originalItem.quantity})
-${userContext ? `Context from user: "${userContext}"` : ''}${refineSection}
+The user cannot find this ingredient: "{{ITEM_EN}}" / "{{ITEM_ES}}" ({{ITEM_QTY}})
+{{USER_CONTEXT}}{{PREVIOUS_SUGGESTIONS}}
 Suggest 2-3 suitable substitutions. Rules:
 1. All suggestions must be pescatarian (no meat, no poultry) and lactose-free
 2. Match the nutritional profile as closely as possible (protein, texture, flavor)
@@ -141,12 +114,10 @@ Respond with JSON:
     }
   ]
 }`;
-}
 
-export function buildFormatRecipePrompt(): string {
-  return `You are Carmy, an AI Chef & Nutritionist.
+export const DEFAULT_FORMAT_RECIPE_PROMPT = `You are Carmy, an AI Chef & Nutritionist.
 
-${USER_PROFILE}
+{{USER_PROFILE}}
 
 Your job: Convert a user's recipe description into a structured recipe object.
 
@@ -194,6 +165,117 @@ Respond with JSON matching this TypeScript type:
   },
   "warnings": ["string"] (optional — note any assumptions about macros, substitutions made, etc.)
 }`;
+
+export const DEFAULT_FORMAT_BUFFER_PROMPT = `You are Carmy, an AI Chef & Nutritionist.
+
+{{USER_PROFILE}}
+
+Your job: Format a protein buffer (morning/afternoon snack) based on the user's description.
+
+Rules:
+- Must be pescatarian and lactose-free
+- Focus on high-protein, practical foods that complement the weekly meal plan
+- Calculate estimated macros per serving
+- Keep it simple: something that can be prepared in under 5 minutes
+
+Respond with JSON:
+{
+  "buffer": {
+    "name": string,
+    "kcal": number,
+    "proteinG": number,
+    "description": string (one practical sentence describing the snack)
+  },
+  "warnings": ["string"] (optional — note any assumptions)
+}`;
+
+// ─── Prompt builder functions ─────────────────────────────────────────────────
+
+export function buildPlanPrompt(
+  recipes: Recipe[],
+  excludeIds: string[] = [],
+  notes?: string,
+  recipeCount = 4,
+  templateOverride?: string,
+  userProfileOverride?: string
+): string {
+  const available = recipes.filter((r) => !excludeIds.includes(r.id));
+  const recipeList = available
+    .map((r) => `- ID: "${r.id}" | Name: "${r.name}" | Method: ${r.cookingMethods.join(', ')} | Protein: ${r.macrosPerServing.proteinG}g | kcal: ${r.macrosPerServing.kcal}${r.favorite ? ' ⭐ favorite' : ''}`)
+    .join('\n');
+  const ids = Array.from({ length: recipeCount }, (_, i) => `"id${i + 1}"`).join(', ');
+  const template = templateOverride ?? DEFAULT_PLAN_PROMPT_TEMPLATE;
+  return applyTemplate(template, {
+    USER_PROFILE: userProfileOverride ?? DEFAULT_USER_PROFILE,
+    RECIPE_COUNT: String(recipeCount),
+    RECIPE_LIST: recipeList,
+    IDS: ids,
+    NOTES_RULE: notes ? `6. User notes: ${notes}` : '',
+  });
+}
+
+export function buildShoppingListPrompt(
+  recipes: Recipe[],
+  proteinBuffers?: SelectedProteinBuffer[],
+  templateOverride?: string
+): string {
+  const recipeNames = recipes.map((r) => r.name).join(', ');
+  const ingredientsByRecipe = recipes
+    .map((r) =>
+      `Recipe: ${r.name}\n${r.ingredients
+        .map((i) => `  - ${i.quantity * 2}${i.unit} ${i.name} (ES: ${i.nameEs}) [section: ${i.supermarketSection}]`)
+        .join('\n')}`
+    )
+    .join('\n\n');
+  const bufferSection = proteinBuffers && proteinBuffers.length > 0
+    ? `\nProtein Buffers (add to pantry/produce sections as appropriate):\n${proteinBuffers
+        .map((b) => `  - ${b.name} × ${b.servings} servings (${b.proteinG}g protein each) — ${b.description}`)
+        .join('\n')}`
+    : '';
+  const template = templateOverride ?? DEFAULT_SHOPPING_PROMPT_TEMPLATE;
+  return applyTemplate(template, {
+    RECIPE_NAMES: recipeNames,
+    INGREDIENTS_BY_RECIPE: ingredientsByRecipe,
+    BUFFER_SECTION: bufferSection,
+  });
+}
+
+export function buildSubstitutionPrompt(
+  originalItem: { nameEn: string; nameEs: string; quantity: string },
+  userContext?: string,
+  previousSuggestions?: SubstitutionSuggestion[],
+  feedback?: string,
+  templateOverride?: string,
+  userProfileOverride?: string
+): string {
+  const refineSection = previousSuggestions && previousSuggestions.length > 0
+    ? `\nPrevious suggestions (provide DIFFERENT alternatives this time):\n${previousSuggestions
+        .map((s) => `  - ${s.nameEn} (${s.quantity}): ${s.rationale}`)
+        .join('\n')}${feedback ? `\nUser feedback: "${feedback}"` : ''}\n`
+    : '';
+  const template = templateOverride ?? DEFAULT_SUBSTITUTION_PROMPT_TEMPLATE;
+  return applyTemplate(template, {
+    USER_PROFILE: userProfileOverride ?? DEFAULT_USER_PROFILE,
+    ITEM_EN: originalItem.nameEn,
+    ITEM_ES: originalItem.nameEs,
+    ITEM_QTY: originalItem.quantity,
+    USER_CONTEXT: userContext ? `Context from user: "${userContext}"\n` : '',
+    PREVIOUS_SUGGESTIONS: refineSection,
+  });
+}
+
+export function buildFormatRecipePrompt(templateOverride?: string, userProfileOverride?: string): string {
+  const template = templateOverride ?? DEFAULT_FORMAT_RECIPE_PROMPT;
+  return applyTemplate(template, {
+    USER_PROFILE: userProfileOverride ?? DEFAULT_USER_PROFILE,
+  });
+}
+
+export function buildFormatProteinBufferPrompt(templateOverride?: string, userProfileOverride?: string): string {
+  const template = templateOverride ?? DEFAULT_FORMAT_BUFFER_PROMPT;
+  return applyTemplate(template, {
+    USER_PROFILE: userProfileOverride ?? DEFAULT_USER_PROFILE,
+  });
 }
 
 export function buildSlug(name: string): string {
@@ -204,3 +286,57 @@ export function buildSlug(name: string): string {
     .replace(/-+/g, '-')
     .slice(0, 60);
 }
+
+// ─── Settings key constants ───────────────────────────────────────────────────
+
+export const PROMPT_SETTING_KEYS = {
+  userProfile: 'userProfile',
+  planPrompt: 'planPromptTemplate',
+  shoppingListPrompt: 'shoppingListPromptTemplate',
+  substitutionPrompt: 'substitutionPromptTemplate',
+  formatRecipePrompt: 'formatRecipePrompt',
+  formatBufferPrompt: 'formatBufferPrompt',
+} as const;
+
+export type PromptSettingKey = (typeof PROMPT_SETTING_KEYS)[keyof typeof PROMPT_SETTING_KEYS];
+
+export const PROMPT_SETTING_DEFAULTS: Record<PromptSettingKey, string> = {
+  [PROMPT_SETTING_KEYS.userProfile]: DEFAULT_USER_PROFILE,
+  [PROMPT_SETTING_KEYS.planPrompt]: DEFAULT_PLAN_PROMPT_TEMPLATE,
+  [PROMPT_SETTING_KEYS.shoppingListPrompt]: DEFAULT_SHOPPING_PROMPT_TEMPLATE,
+  [PROMPT_SETTING_KEYS.substitutionPrompt]: DEFAULT_SUBSTITUTION_PROMPT_TEMPLATE,
+  [PROMPT_SETTING_KEYS.formatRecipePrompt]: DEFAULT_FORMAT_RECIPE_PROMPT,
+  [PROMPT_SETTING_KEYS.formatBufferPrompt]: DEFAULT_FORMAT_BUFFER_PROMPT,
+};
+
+export const PROMPT_SETTING_METADATA: Record<PromptSettingKey, { label: string; description: string; variables?: string[] }> = {
+  [PROMPT_SETTING_KEYS.userProfile]: {
+    label: '👤 User Profile',
+    description: 'Embedded in every prompt. Edit dietary restrictions, calorie targets, air fryer model, etc.',
+  },
+  [PROMPT_SETTING_KEYS.planPrompt]: {
+    label: '📅 Weekly Plan Generation',
+    description: 'Used when Carmy selects recipes for the week.',
+    variables: ['{{USER_PROFILE}}', '{{RECIPE_COUNT}}', '{{RECIPE_LIST}}', '{{IDS}}', '{{NOTES_RULE}}'],
+  },
+  [PROMPT_SETTING_KEYS.shoppingListPrompt]: {
+    label: '🛒 Shopping List',
+    description: 'Used to generate the consolidated shopping list.',
+    variables: ['{{RECIPE_NAMES}}', '{{INGREDIENTS_BY_RECIPE}}', '{{BUFFER_SECTION}}'],
+  },
+  [PROMPT_SETTING_KEYS.substitutionPrompt]: {
+    label: '🔄 Ingredient Substitution',
+    description: 'Used when asking Carmy for ingredient alternatives.',
+    variables: ['{{USER_PROFILE}}', '{{ITEM_EN}}', '{{ITEM_ES}}', '{{ITEM_QTY}}', '{{USER_CONTEXT}}', '{{PREVIOUS_SUGGESTIONS}}'],
+  },
+  [PROMPT_SETTING_KEYS.formatRecipePrompt]: {
+    label: '✍️ Format Recipe',
+    description: 'Used to convert a recipe description into structured data.',
+    variables: ['{{USER_PROFILE}}'],
+  },
+  [PROMPT_SETTING_KEYS.formatBufferPrompt]: {
+    label: '💪 Format Protein Buffer',
+    description: 'Used to format a standalone protein buffer from a description.',
+    variables: ['{{USER_PROFILE}}'],
+  },
+};

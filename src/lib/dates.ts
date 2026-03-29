@@ -5,7 +5,7 @@
 export function getCurrentWeekMonday(): string {
   const now = new Date();
   const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
-  const diff = day === 0 ? -6 : 1 - day;
+  const diff = day === 0 ? 1 : 1 - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + diff);
   return monday.toISOString().split('T')[0];

@@ -14,6 +14,7 @@ import { HONEST_GREENS } from '@/lib/glovoConstants';
 
 const DAILY_KCAL = 1750;
 const DAILY_PROTEIN = 160;
+const MAX_RECIPE_USES = 2;
 
 const TODAY_DAY = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()];
 
@@ -47,8 +48,8 @@ function DroppableCell({ id, isToday, children }: { id: string; isToday?: boolea
   );
 }
 
-function DraggableItem({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+function DraggableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id, disabled });
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
     : undefined;
@@ -56,11 +57,11 @@ function DraggableItem({ id, children }: { id: string; children: React.ReactNode
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
+      {...(disabled ? {} : listeners)}
+      {...(disabled ? {} : attributes)}
       className={`cursor-grab select-none rounded-lg border border-border bg-surface-2 p-2 text-xs hover:border-accent/40 transition-colors touch-none ${
         isDragging ? 'opacity-40 z-50' : ''
-      }`}
+      } ${disabled ? 'cursor-default' : ''}`}
     >
       {children}
     </div>
@@ -85,12 +86,15 @@ interface WeeklyTimetableProps {
   bufferSlots: BufferSlot[];
   availableRecipes: Recipe[];
   availableBuffers: SelectedProteinBuffer[];
+  allRecipes: Recipe[];
   onMealSlotsUpdate: (
     mealSlots: MealSlot[],
     dinnerSlots: Array<{ day: string; recipeId: string; confirmed: boolean }>
   ) => void;
   onBufferSlotsUpdate: (bufferSlots: BufferSlot[]) => void;
   onConfirm: (derivedBuffers: SelectedProteinBuffer[]) => void;
+  onPoolRecipeRemove: (recipeId: string) => void;
+  onPoolRecipeAdd: (recipeId: string) => void;
 }
 
 export default function WeeklyTimetable({
@@ -99,16 +103,41 @@ export default function WeeklyTimetable({
   bufferSlots: initialBufferSlots,
   availableRecipes,
   availableBuffers,
+  allRecipes,
   onMealSlotsUpdate,
   onBufferSlotsUpdate,
   onConfirm,
+  onPoolRecipeRemove,
+  onPoolRecipeAdd,
 }: WeeklyTimetableProps) {
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(initialMealSlots);
   const [bufferSlots, setBufferSlots] = useState<BufferSlot[]>(initialBufferSlots);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [recipeSearch, setRecipeSearch] = useState('');
 
   // All recipes available for lookup (includes Honest Greens)
   const allLookupRecipes = [HONEST_GREENS, ...availableRecipes];
+
+  // ── Usage tracking ──────────────────────────────────────────────────────────
+
+  const usageMap = new Map<string, number>();
+  for (const slot of mealSlots) {
+    if (slot.recipeId) {
+      usageMap.set(slot.recipeId, (usageMap.get(slot.recipeId) ?? 0) + 1);
+    }
+  }
+
+  // Recipes in pool not currently at max usage (for search exclusion)
+  const poolRecipeIds = new Set(availableRecipes.map((r) => r.id));
+
+  // Search results: all bank recipes not currently in pool, filtered by query
+  const searchResults = recipeSearch.trim()
+    ? allRecipes.filter(
+        (r) =>
+          !poolRecipeIds.has(r.id) &&
+          r.name.toLowerCase().includes(recipeSearch.toLowerCase())
+      )
+    : [];
 
   // ── Slot lookups ────────────────────────────────────────────────────────────
 
@@ -169,8 +198,6 @@ export default function WeeklyTimetable({
   const clearCell = (rowType: string, day: string) => {
     if (rowType === 'dinner' || rowType === 'lunch') {
       const mealType = rowType as MealType;
-      // For lunch: store explicit empty to suppress auto-fill
-      // For dinner: just remove
       let updated: MealSlot[];
       if (mealType === 'lunch') {
         updated = [
@@ -457,15 +484,87 @@ export default function WeeklyTimetable({
           {/* Recipe Pool */}
           <div className="bg-surface-2 border border-border rounded-xl p-3">
             <p className="text-xs font-semibold text-muted mb-2">🍽 Recipes — drag to Lunch or Dinner</p>
+
+            {/* Search box */}
+            <div className="mb-2">
+              <input
+                type="text"
+                value={recipeSearch}
+                onChange={(e) => setRecipeSearch(e.target.value)}
+                placeholder="Search recipes to add…"
+                className="w-full text-xs bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent/60"
+              />
+              {searchResults.length > 0 && (
+                <div className="mt-1 flex flex-col gap-1 max-h-40 overflow-y-auto">
+                  {searchResults.map((recipe) => (
+                    <div
+                      key={recipe.id}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-2/60 px-2 py-1.5 text-xs"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{recipe.name}</p>
+                        <p className="text-muted font-mono">{recipe.macrosPerServing.kcal} kcal · {recipe.macrosPerServing.proteinG}g</p>
+                      </div>
+                      <button
+                        onClick={() => { onPoolRecipeAdd(recipe.id); setRecipeSearch(''); }}
+                        className="flex-shrink-0 w-6 h-6 rounded-full bg-accent/20 text-accent hover:bg-accent/40 transition-colors font-bold text-sm leading-none flex items-center justify-center"
+                        title="Add to plan"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {recipeSearch.trim() && searchResults.length === 0 && (
+                <p className="text-[10px] text-muted/60 mt-1 px-1">No recipes found</p>
+              )}
+            </div>
+
+            {/* Pool items */}
             <div className="flex flex-col gap-2">
-              {availableRecipes.map((recipe) => (
-                <DraggableItem key={recipe.id} id={`recipe::${recipe.id}`}>
-                  <p className="font-semibold text-foreground truncate">{recipe.name}</p>
-                  <p className="text-muted mt-0.5 font-mono">
-                    {recipe.macrosPerServing.kcal} kcal · {recipe.macrosPerServing.proteinG}g
-                  </p>
-                </DraggableItem>
-              ))}
+              {availableRecipes.map((recipe) => {
+                const used = usageMap.get(recipe.id) ?? 0;
+                const atMax = used >= MAX_RECIPE_USES;
+                const cardContent = (
+                  <div className="flex items-start gap-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{recipe.name}</p>
+                      <p className="text-muted mt-0.5 font-mono">
+                        {recipe.macrosPerServing.kcal} kcal · {recipe.macrosPerServing.proteinG}g
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={`text-[9px] font-mono ${atMax ? 'text-red-400/70' : used > 0 ? 'text-accent/70' : 'text-muted/30'}`}>
+                        {used}/{MAX_RECIPE_USES}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onPoolRecipeRemove(recipe.id); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="text-muted/40 hover:text-red-400 text-sm leading-none transition-colors"
+                        title="Remove from plan"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                );
+                if (atMax) {
+                  return (
+                    <div key={recipe.id} className="rounded-lg border border-border bg-surface-2 p-2 text-xs opacity-40 select-none">
+                      {cardContent}
+                    </div>
+                  );
+                }
+                return (
+                  <DraggableItem key={recipe.id} id={`recipe::${recipe.id}`}>
+                    {cardContent}
+                  </DraggableItem>
+                );
+              })}
+              {availableRecipes.length === 0 && (
+                <p className="text-[10px] text-muted/50 text-center py-2">Search above to add recipes</p>
+              )}
             </div>
           </div>
 
