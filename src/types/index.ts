@@ -98,6 +98,12 @@ export type DayOfWeek =
   | 'saturday'
   | 'sunday';
 
+export type WeeklyPlanStatus = 'planning' | 'shopping' | 'cooking' | 'done';
+
+export interface SelectedProteinBuffer extends ProteinBuffer {
+  servings: number;
+}
+
 export interface DinnerSlot {
   day: DayOfWeek;
   recipeId: string;
@@ -108,18 +114,36 @@ export interface DinnerSlot {
 export interface WeeklyPlan {
   id: string;
   weekStartDate: string;
+  status: WeeklyPlanStatus;
+  recipeCount: number;
   dinnerSlots: DinnerSlot[];
+  selectedProteinBuffers?: SelectedProteinBuffer[];
   shoppingList?: ShoppingList;
+  rationale?: string;
   confirmedAt?: string;
+  completedAt?: string;
 }
 
 // ─── Shopping List ───────────────────────────────────────────────────────────
 
 export interface ShoppingItem {
+  id: string;
+  weeklyPlanId: string;
+  section: SupermarketSection;
   nameEn: string;
   nameEs: string;
   quantity: string;
   recipes: string[];
+  checked: boolean;
+  substitution?: {
+    originalNameEn: string;
+    originalNameEs: string;
+    originalQuantity: string;
+    newNameEn: string;
+    newNameEs: string;
+    newQuantity: string;
+    acceptedAt: string;
+  };
 }
 
 export interface ShoppingSection {
@@ -135,11 +159,64 @@ export interface ShoppingList {
   sections: ShoppingSection[];
 }
 
+// Raw shopping item from Claude API response (before persisting to Convex)
+export interface RawShoppingItem {
+  nameEn: string;
+  nameEs: string;
+  quantity: string;
+  recipes: string[];
+}
+
+export interface RawShoppingSection {
+  section: SupermarketSection;
+  labelEn: string;
+  labelEs: string;
+  items: RawShoppingItem[];
+  emoji: string;
+}
+
+// ─── Ingredient Substitution ──────────────────────────────────────────────────
+
+export interface SubstitutionSuggestion {
+  nameEn: string;
+  nameEs: string;
+  quantity: string;
+  rationale: string;
+}
+
+export interface IngredientSubRequest {
+  originalItem: { nameEn: string; nameEs: string; quantity: string };
+  userContext?: string;
+  previousSuggestions?: SubstitutionSuggestion[];
+  feedback?: string;
+}
+
+export interface IngredientSubResponse {
+  suggestions: SubstitutionSuggestion[];
+}
+
+// ─── Meal Timetable ──────────────────────────────────────────────────────────
+
+export type MealType = 'lunch' | 'dinner';
+
+export interface MealSlot {
+  day: string;
+  mealType: MealType;
+  recipeId?: string;
+}
+
+export interface BufferSlot {
+  day: string;
+  mealTime: MealType;
+  bufferName?: string;
+}
+
 // ─── API Payloads ─────────────────────────────────────────────────────────────
 
 export interface GeneratePlanRequest {
   excludeRecipeIds?: string[];
   notes?: string;
+  recipeCount?: number;
 }
 
 export interface GeneratePlanResponse {

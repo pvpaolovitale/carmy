@@ -151,6 +151,20 @@ export const removeAll = mutation({
   },
 });
 
+export const removeProteinBuffer = mutation({
+  args: { bufferName: v.string() },
+  handler: async (ctx, { bufferName }) => {
+    const docs = await ctx.db.query('recipes').collect();
+    for (const doc of docs) {
+      const d = doc as unknown as Record<string, unknown>;
+      const pb = d.proteinBuffer as { name: string } | undefined;
+      if (pb?.name === bufferName) {
+        await ctx.db.patch(doc._id, { proteinBuffer: undefined });
+      }
+    }
+  },
+});
+
 export const seedMany = mutation({
   args: {
     recipes: v.array(v.any()),

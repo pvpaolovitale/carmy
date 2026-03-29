@@ -1,17 +1,45 @@
-import { notFound } from 'next/navigation';
-import { getRecipeBySlug } from '@/lib/recipes';
+'use client';
+
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../../../convex/_generated/api';
+import { notFound, useParams } from 'next/navigation';
 import AirFryerBadge from '@/components/cook/AirFryerBadge';
 import StepList from '@/components/cook/StepList';
 import Badge from '@/components/ui/Badge';
+import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
+import { Recipe } from '@/types';
 
-export default async function CookRecipePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const recipe = await getRecipeBySlug(slug);
+export default function CookRecipePage() {
+  const params = useParams();
+  const slug = params.slug as string;
 
-  if (!recipe) notFound();
+  const rawRecipe = useQuery(api.recipes.getBySlug, { slug });
+  const updateRecipe = useMutation(api.recipes.update);
 
+  if (rawRecipe === undefined) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Link href="/cook" className="text-muted text-sm hover:text-foreground transition-colors">
+          ← Back to recipes
+        </Link>
+        <div className="flex justify-center py-16">
+          <Spinner size="lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (rawRecipe === null) {
+    notFound();
+  }
+
+  const recipe = rawRecipe as unknown as Recipe;
   const totalTime = recipe.prepTimeMin + recipe.cookTimeMin;
+
+  const handleToggleFavorite = async () => {
+    await updateRecipe({ slug: recipe.slug, patch: { favorite: !recipe.favorite } });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,9 +52,15 @@ export default async function CookRecipePage({ params }: { params: Promise<{ slu
       <div>
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-2xl font-bold text-foreground">
-            {recipe.favorite && <span className="text-amber-400 mr-2">⭐</span>}
             {recipe.name}
           </h1>
+          <button
+            onClick={handleToggleFavorite}
+            className={`flex-shrink-0 text-xl transition-transform hover:scale-110 ${recipe.favorite ? 'text-amber-400' : 'text-muted hover:text-amber-400'}`}
+            title={recipe.favorite ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            {recipe.favorite ? '⭐' : '☆'}
+          </button>
         </div>
         {recipe.nameEs && <p className="text-muted text-sm mt-0.5">{recipe.nameEs}</p>}
         <p className="text-muted mt-2 text-sm">{recipe.description}</p>
@@ -36,24 +70,49 @@ export default async function CookRecipePage({ params }: { params: Promise<{ slu
           <span className="text-xs font-mono text-muted">· prep {recipe.prepTimeMin}min</span>
           <span className="text-xs font-mono text-muted">· cook {recipe.cookTimeMin}min</span>
         </div>
+
+        <div className="flex flex-wrap gap-1 mt-2">
+          {recipe.tags.map((t) => (
+            <Badge key={t} color="amber">{t.replace('_', '-')}</Badge>
+          ))}
+        </div>
       </div>
 
-      {/* Macros */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'kcal', value: recipe.macrosPerServing.kcal * 2, note: 'double' },
-          { label: 'protein', value: `${recipe.macrosPerServing.proteinG * 2}g` },
-          { label: 'carbs', value: `${recipe.macrosPerServing.carbsG * 2}g` },
-          { label: 'fat', value: `${recipe.macrosPerServing.fatG * 2}g` },
-        ].map((m) => (
-          <div key={m.label} className="bg-surface-2 border border-border rounded-lg p-3 text-center">
-            <p className="text-lg font-bold font-mono text-accent">{m.value}</p>
-            <p className="text-xs text-muted">{m.label}</p>
-            {m.note && <p className="text-xs text-muted/60">{m.note}</p>}
-          </div>
-        ))}
+      {/* Macros — Per Serving */}
+      <div>
+        <p className="text-xs text-muted mb-2 font-semibold uppercase tracking-wider">Per serving</p>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: 'kcal', value: recipe.macrosPerServing.kcal },
+            { label: 'protein', value: `${recipe.macrosPerServing.proteinG}g` },
+            { label: 'carbs', value: `${recipe.macrosPerServing.carbsG}g` },
+            { label: 'fat', value: `${recipe.macrosPerServing.fatG}g` },
+          ].map((m) => (
+            <div key={m.label} className="bg-surface-2 border border-border rounded-lg p-3 text-center">
+              <p className="text-lg font-bold font-mono text-foreground">{m.value}</p>
+              <p className="text-xs text-muted">{m.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
-      <p className="text-xs text-muted -mt-2">Per double portion (Cook Once, Eat Twice)</p>
+
+      {/* Macros — Double Portion */}
+      <div>
+        <p className="text-xs text-muted mb-2 font-semibold uppercase tracking-wider">Double portion <span className="normal-case font-normal">(Cook Once, Eat Twice)</span></p>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: 'kcal', value: recipe.macrosPerServing.kcal * 2 },
+            { label: 'protein', value: `${recipe.macrosPerServing.proteinG * 2}g` },
+            { label: 'carbs', value: `${recipe.macrosPerServing.carbsG * 2}g` },
+            { label: 'fat', value: `${recipe.macrosPerServing.fatG * 2}g` },
+          ].map((m) => (
+            <div key={m.label} className="bg-surface-2 border border-accent/30 rounded-lg p-3 text-center">
+              <p className="text-lg font-bold font-mono text-accent">{m.value}</p>
+              <p className="text-xs text-muted">{m.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Air Fryer */}
       {recipe.airFryerSettings && <AirFryerBadge settings={recipe.airFryerSettings} />}
@@ -74,15 +133,6 @@ export default async function CookRecipePage({ params }: { params: Promise<{ slu
           ))}
         </ul>
       </div>
-
-      {/* Protein Buffer */}
-      {recipe.proteinBuffer && (
-        <div className="bg-surface-2 border border-border rounded-xl p-4">
-          <h2 className="text-sm font-semibold text-foreground mb-1">🌅 Protein Buffer Pairing</h2>
-          <p className="text-sm text-muted">{recipe.proteinBuffer.name}</p>
-          <p className="text-xs text-muted/60 mt-1">{recipe.proteinBuffer.description} · {recipe.proteinBuffer.proteinG}g protein</p>
-        </div>
-      )}
 
       {/* Steps */}
       <div>

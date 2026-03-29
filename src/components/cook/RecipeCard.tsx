@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Recipe } from '@/types';
 import Badge from '@/components/ui/Badge';
+import { getProteinTypeLabel } from '@/lib/recipeUtils';
 
 const methodIcon: Record<string, string> = {
   air_fryer: '💨',
@@ -34,9 +35,7 @@ export default function RecipeCard({ recipe, href }: { recipe: Recipe; href?: st
       </div>
 
       <div className="flex flex-wrap gap-1">
-        {recipe.tags.map((t) => (
-          <Badge key={t} color="amber">{t.replace('_', '-')}</Badge>
-        ))}
+        {(() => { const { label, emoji } = getProteinTypeLabel(recipe); return <Badge color="amber">{emoji} {label}</Badge>; })()}
       </div>
     </div>
   );

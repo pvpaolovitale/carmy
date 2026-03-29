@@ -1,8 +1,36 @@
 import Anthropic from '@anthropic-ai/sdk';
+import fs from 'fs';
+import path from 'path';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+/**
+ * Reads a key from .env.local directly — used as fallback when the system
+ * has an empty env var that overrides the file (common in dev environments).
+ */
+function readKeyFromEnvFile(keyName: string): string | undefined {
+  try {
+    const envPath = path.join(process.cwd(), '.env.local');
+    const content = fs.readFileSync(envPath, 'utf8');
+    const match = content.match(new RegExp(`^${keyName}=(.+)$`, 'm'));
+    return match?.[1]?.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// Lazy singleton — created on first call so env vars are fully loaded.
+// Falls back to reading .env.local directly if the system env var is empty.
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) {
+    const apiKey = process.env.ANTHROPIC_API_KEY || readKeyFromEnvFile('ANTHROPIC_API_KEY');
+    if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment or .env.local');
+    _client = new Anthropic({ apiKey });
+  }
+  return _client;
+}
 
 export async function callClaude(systemPrompt: string, userMessage: string): Promise<string> {
+  const client = getClient();
   const msg = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,

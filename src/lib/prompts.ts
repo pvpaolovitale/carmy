@@ -1,4 +1,4 @@
-import { Recipe } from '@/types';
+import { Recipe, SelectedProteinBuffer, SubstitutionSuggestion } from '@/types';
 
 const USER_PROFILE = `
 User Profile:
@@ -10,21 +10,23 @@ User Profile:
 - Air Fryer model: Create Air Fryer Studio Crystal
 `;
 
-export function buildPlanPrompt(recipes: Recipe[], excludeIds: string[] = [], notes?: string): string {
+export function buildPlanPrompt(recipes: Recipe[], excludeIds: string[] = [], notes?: string, recipeCount = 4): string {
   const available = recipes.filter((r) => !excludeIds.includes(r.id));
   const recipeList = available
     .map((r) => `- ID: "${r.id}" | Name: "${r.name}" | Method: ${r.cookingMethods.join(', ')} | Protein: ${r.macrosPerServing.proteinG}g | kcal: ${r.macrosPerServing.kcal}${r.favorite ? ' ⭐ favorite' : ''}`)
     .join('\n');
 
+  const ids = Array.from({ length: recipeCount }, (_, i) => `"id${i + 1}"`).join(', ');
+
   return `You are Carmy, an AI Chef & Nutritionist.
 
 ${USER_PROFILE}
 
-Your job: Select exactly 4 dinners from the recipe bank for this week's meal plan.
+Your job: Select exactly ${recipeCount} dinners from the recipe bank for this week's meal plan.
 
 Rules:
-1. Select exactly 4 recipes
-2. Balance cooking methods (don't pick 4 air fryer recipes if others are available)
+1. Select exactly ${recipeCount} recipes
+2. Balance cooking methods (don't pick only air fryer recipes if others are available)
 3. Balance flavor profiles / cuisines
 4. Prioritize favorites (⭐) but don't pick all favorites
 5. Ensure the weekly protein and calorie targets are met across the plan
@@ -35,12 +37,12 @@ ${recipeList}
 
 Respond with JSON in this exact shape:
 {
-  "selectedRecipeIds": ["id1", "id2", "id3", "id4"],
+  "selectedRecipeIds": [${ids}],
   "rationale": "Brief explanation of your choices (2-3 sentences)"
 }`;
 }
 
-export function buildShoppingListPrompt(recipes: Recipe[]): string {
+export function buildShoppingListPrompt(recipes: Recipe[], proteinBuffers?: SelectedProteinBuffer[]): string {
   const recipeNames = recipes.map((r) => r.name).join(', ');
 
   const ingredientsByRecipe = recipes
@@ -51,19 +53,26 @@ export function buildShoppingListPrompt(recipes: Recipe[]): string {
     )
     .join('\n\n');
 
+  const bufferSection = proteinBuffers && proteinBuffers.length > 0
+    ? `\nProtein Buffers (add to pantry/produce sections as appropriate):\n${proteinBuffers
+        .map((b) => `  - ${b.name} × ${b.servings} servings (${b.proteinG}g protein each) — ${b.description}`)
+        .join('\n')}`
+    : '';
+
   return `You are Carmy, an AI Chef & Nutritionist.
 
 Recipes this week: ${recipeNames}
 Cook Once Eat Twice: ALL quantities are already doubled (2 servings per recipe).
 
 Ingredients to consolidate:
-${ingredientsByRecipe}
+${ingredientsByRecipe}${bufferSection}
 
 Generate a consolidated bilingual shopping list. Rules:
 1. Merge duplicate ingredients across recipes (sum quantities)
 2. Group by supermarket section
 3. Every item: English name / Spanish name, quantity
-4. Add waste-reduction notes where applicable (e.g., "Use half onion for Recipe A, rest for Recipe B")
+4. Include protein buffer items in the appropriate sections
+5. Add waste-reduction notes where applicable (e.g., "Use half onion for Recipe A, rest for Recipe B")
 
 Sections and their labels:
 - fish_seafood → "🐟 Fish Counter / Pescadería"
@@ -93,6 +102,44 @@ Respond with JSON:
     }
   ],
   "wasteNotes": ["Use the leftover lemon from Recipe A in Recipe B"]
+}`;
+}
+
+export function buildSubstitutionPrompt(
+  originalItem: { nameEn: string; nameEs: string; quantity: string },
+  userContext?: string,
+  previousSuggestions?: SubstitutionSuggestion[],
+  feedback?: string,
+): string {
+  const refineSection = previousSuggestions && previousSuggestions.length > 0
+    ? `\nPrevious suggestions (provide DIFFERENT alternatives this time):\n${previousSuggestions
+        .map((s) => `  - ${s.nameEn} (${s.quantity}): ${s.rationale}`)
+        .join('\n')}${feedback ? `\nUser feedback: "${feedback}"` : ''}\n`
+    : '';
+
+  return `You are Carmy, an AI Chef & Nutritionist.
+
+${USER_PROFILE}
+
+The user cannot find this ingredient: "${originalItem.nameEn}" / "${originalItem.nameEs}" (${originalItem.quantity})
+${userContext ? `Context from user: "${userContext}"` : ''}${refineSection}
+Suggest 2-3 suitable substitutions. Rules:
+1. All suggestions must be pescatarian (no meat, no poultry) and lactose-free
+2. Match the nutritional profile as closely as possible (protein, texture, flavor)
+3. Adjust quantity appropriately for the substitution
+4. Keep suggestions practical — available in a standard supermarket
+5. Provide bilingual names (English / Spanish)
+
+Respond with JSON:
+{
+  "suggestions": [
+    {
+      "nameEn": "Substitute name in English",
+      "nameEs": "Nombre del sustituto en español",
+      "quantity": "Adjusted quantity",
+      "rationale": "Brief reason this works as a substitute (1 sentence)"
+    }
+  ]
 }`;
 }
 

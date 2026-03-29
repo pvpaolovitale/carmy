@@ -9,6 +9,7 @@
  */
 
 import type * as recipes from "../recipes.js";
+import type * as weeklyPlans from "../weeklyPlans.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   recipes: typeof recipes;
+  weeklyPlans: typeof weeklyPlans;
 }>;
 
 /**

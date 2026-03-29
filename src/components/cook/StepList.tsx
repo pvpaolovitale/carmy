@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { CookingStep } from '@/types';
 
-export default function StepList({ steps }: { steps: CookingStep[] }) {
+interface StepListProps {
+  steps: CookingStep[];
+  onAllStepsDone?: () => void;
+}
+
+export default function StepList({ steps, onAllStepsDone }: StepListProps) {
   const [current, setCurrent] = useState(0);
   const sorted = [...steps].sort((a, b) => a.order - b.order);
 
@@ -57,11 +62,17 @@ export default function StepList({ steps }: { steps: CookingStep[] }) {
           ← Back
         </button>
         <button
-          onClick={() => setCurrent(Math.min(sorted.length - 1, current + 1))}
+          onClick={() => {
+            const next = Math.min(sorted.length - 1, current + 1);
+            setCurrent(next);
+            if (next === sorted.length - 1 && onAllStepsDone) {
+              onAllStepsDone();
+            }
+          }}
           disabled={current === sorted.length - 1}
           className="flex-1 py-2.5 text-sm bg-accent text-black font-semibold rounded-lg hover:bg-amber-500 disabled:opacity-30 transition-colors"
         >
-          Next →
+          {current === sorted.length - 2 ? 'Last Step →' : 'Next →'}
         </button>
       </div>
     </ol>
